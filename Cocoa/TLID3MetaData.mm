@@ -430,15 +430,15 @@ using namespace TagLib;
 }
 
 - (NSInteger)trackTotal
-{
-	NSString *track = [self _stringForTag:"TRCK"];
-	if(track && ([track rangeOfString:@"/"].location != NSNotFound))
 	{
-		NSArray *components = [track componentsSeparatedByString:@"/"];
-		return [[components objectAtIndex:1] integerValue];
+		NSString *track = [self _stringForTag:"TRCK"];
+		if(track && ([track rangeOfString:@"/"].location != NSNotFound))
+		{
+			NSArray *components = [track componentsSeparatedByString:@"/"];
+			return [[components objectAtIndex:1] integerValue];
+		}
+		return 0;
 	}
-	return nil;
-}
 
 - (void)setDiscNumber:(NSInteger)discNumber
 {
