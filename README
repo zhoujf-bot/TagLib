@@ -1,49 +1,10 @@
-# TagLib
+TagLib packaged as an xcframework with SwiftPM wrappers
 
-TagLib is a lightweight library for reading and writing audio file metadata.  
-This repository provides an enhanced and easy-to-integrate version of the original TagLib, with additional improvements such as **Package Manager (PM) support**.
+Targets / Products
+- TagLib (binary): xcframework bundling TagLib built for macOS.
+- TagLibBridge: Objective-C++ bridge exposing read/write over TagLib (MP3, MP4/M4A/M4B/M4V, FLAC, OGG, Opus, WavPack, MPC, DSF, WAV, AIFF). Matroska not supported by TagLib.
+- MatroskaBridge: Placeholder for MKV/MKA/WebM. Real implementation requires linking libmatroska + libebml (or FFmpeg). Currently returns “not supported” unless you add those deps and fill the TODO.
+- TagLibTestSupport / TagLibReadWriteTests: Test harness for TagLib read/write; fixtures downloaded via scripts/fetch-fixtures.sh (see Tests/Fixtures/samples.json.template).
 
-## 📌 What's New Compared to the Original TagLib
-
-- **Added Package Manager Support (PM Support)**  
-  This repository can be integrated directly through package managers (e.g., Swift Package Manager), avoiding manual builds or maintaining the original source code.
-
-- **Simplified Project Structure & Wrapper**  
-  Makes it easier to use TagLib in modern applications.
-
-- **More Convenient Integration Options**  
-  Supports SPM integration, manual source integration, and framework-based integration.
-
-## 🎯 What This Library Can Do
-
-This library allows you to:
-
-- Read common metadata fields from audio files  
-  (title, artist, album, year, cover art, etc.)
-- Write or modify metadata tags
-- Batch process metadata for large collections of audio files
-- Build audio players, media organizers, auto-tagging tools, and more
-
-Supported formats include (but are not limited to):
-
-- **MP3** (ID3v1 / ID3v2)
-- **FLAC / OGG** (Vorbis Comments)
-- **M4A / MP4**
-- **WAV / AIFF** (where supported by TagLib)
-
----
-
-## 📦 Integration Methods
-
-You can integrate this library into your project using any of the following approaches.
-
----
-
-### **Method 1: Using a Package Manager (Recommended)**
-
-Add the following to your package configuration (e.g., in `Package.swift`):
-
-```swift
-dependencies: [
-    .package(url: "https://github.com/zhoujf-bot/TagLib.git", from: "1.0.0")
-]
+Matroska note
+TagLib does not support Matroska. If you need MKV/MKA/WebM, link libmatroska+libebml and implement MatroskaBridge (parsing VorbisComment-style tags and attachments). The target is present to keep the App-facing API stable; without the libs it returns “not supported”.

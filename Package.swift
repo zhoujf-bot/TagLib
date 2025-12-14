@@ -14,6 +14,10 @@ let package = Package(
         .library(
             name: "TagLibBridge",
             targets: ["TagLibBridge"]
+        ),
+        .library(
+            name: "MatroskaBridge",
+            targets: ["MatroskaBridge"]
         )
     ],
     targets: [
@@ -36,6 +40,12 @@ let package = Package(
                 .headerSearchPath("include"),
                 .define("TAGLIB_CPP", to: "1")
             ]
+        ),
+        .target(
+            name: "MatroskaBridge",
+            dependencies: [],
+            path: "Sources/MatroskaBridge",
+            publicHeadersPath: "include"
         ),
         .testTarget(
             name: "TagLibReadWriteTests",
