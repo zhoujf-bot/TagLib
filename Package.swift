@@ -49,7 +49,7 @@ let package = Package(
         ),
         .testTarget(
             name: "TagLibReadWriteTests",
-            dependencies: ["TagLibTestSupport"],
+            dependencies: ["TagLibTestSupport", "TagLibBridge"],
             path: "Tests/TagLibReadWriteTests"
         )
     ]

@@ -4,7 +4,10 @@ Targets / Products
 - TagLib (binary): xcframework bundling TagLib built for macOS.
 - TagLibBridge: Objective-C++ bridge exposing read/write over TagLib (MP3, MP4/M4A/M4B/M4V, FLAC, OGG, Opus, WavPack, MPC, DSF, WAV, AIFF). Matroska not supported by TagLib.
 - MatroskaBridge: Placeholder for MKV/MKA/WebM. Real implementation requires linking libmatroska + libebml (or FFmpeg). Currently returns “not supported” unless you add those deps and fill the TODO.
-- TagLibTestSupport / TagLibReadWriteTests: Test harness for TagLib read/write; fixtures downloaded via scripts/fetch-fixtures.sh (see Tests/Fixtures/samples.json.template).
+- TagLibTestSupport / TagLibReadWriteTests: Test harness for TagLib read/write; fixtures auto-discovered and downloaded via scripts/fetch-fixtures.sh (uses scripts/fixtures-sources.json and stores cache in Tests/Fixtures/fixtures.db). Add more sources if a format is missing.
 
 Matroska note
 TagLib does not support Matroska. If you need MKV/MKA/WebM, link libmatroska+libebml and implement MatroskaBridge (parsing VorbisComment-style tags and attachments). The target is present to keep the App-facing API stable; without the libs it returns “not supported”.
+
+Fixtures note
+Some sources (e.g. Freesound) require an API key. Put it in `scripts/.env` (see `scripts/.env.example`) or export `FREESOUND_API_KEY` before running `scripts/fetch-fixtures.sh`. The script manages a local venv and installs dependencies from `scripts/requirements.txt` (currently empty).

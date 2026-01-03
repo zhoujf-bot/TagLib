@@ -14,7 +14,7 @@
 
 + (NSString *)stringWithTagLibString:(const TagLib::String)string
 {
-	if(string.isNull())
+	if(string.isEmpty())
 		return nil;
 	
 	return [self stringWithUTF8String:string.toCString(true)];
@@ -22,7 +22,7 @@
 
 - (id)initWithTagLibString:(const TagLib::String)string
 {
-	if(string.isNull())
+	if(string.isEmpty())
 		return nil;
 	
 	return [self initWithUTF8String:string.toCString(true)];
@@ -37,5 +37,5 @@ TagLib::String NSStringToTagLibString(NSString *string)
 	if(string)
 		return TagLib::String([string UTF8String], TagLib::String::UTF8);
 	
-	return TagLib::String::null;
+	return TagLib::String();
 }

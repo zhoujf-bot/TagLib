@@ -1,6 +1,11 @@
 #import "TagLibBridge.h"
 
 #if __has_include(<TagLib/taglib.h>)
+#ifdef TAGLIB_EXPORT_H
+#undef TAGLIB_EXPORT_H
+#endif
+#import <TagLib/taglib_export.h>
+#import <TagLib/taglib_config.h>
 #import <TagLib/taglib.h>
 #import <TagLib/tag.h>
 #import <TagLib/mpegfile.h>
@@ -8,24 +13,88 @@
 #import <TagLib/id3v2frame.h>
 #import <TagLib/attachedpictureframe.h>
 #import <TagLib/textidentificationframe.h>
+#if __has_include(<TagLib/fileref.h>)
+#define TAGLIB_HAVE_FILEREF 1
 #import <TagLib/fileref.h>
+#endif
+#if __has_include(<TagLib/flacfile.h>)
+#define TAGLIB_HAVE_FLAC 1
 #import <TagLib/flacfile.h>
 #import <TagLib/flacpicture.h>
+#endif
+#if __has_include(<TagLib/oggfile.h>)
+#define TAGLIB_HAVE_OGG 1
 #import <TagLib/oggfile.h>
+#endif
+#if __has_include(<TagLib/oggflacfile.h>)
+#define TAGLIB_HAVE_OGGFLAC 1
 #import <TagLib/oggflacfile.h>
+#endif
+#if __has_include(<TagLib/vorbisfile.h>)
+#define TAGLIB_HAVE_VORBIS 1
 #import <TagLib/vorbisfile.h>
+#endif
+#if __has_include(<TagLib/opusfile.h>)
+#define TAGLIB_HAVE_OPUS 1
 #import <TagLib/opusfile.h>
+#endif
+#if __has_include(<TagLib/wavfile.h>)
+#define TAGLIB_HAVE_WAV 1
 #import <TagLib/wavfile.h>
+#endif
+#if __has_include(<TagLib/aifffile.h>)
+#define TAGLIB_HAVE_AIFF 1
 #import <TagLib/aifffile.h>
+#endif
+#if __has_include(<TagLib/mpcfile.h>)
+#define TAGLIB_HAVE_MPC 1
 #import <TagLib/mpcfile.h>
+#endif
+#if __has_include(<TagLib/wavpackfile.h>)
+#define TAGLIB_HAVE_WAVPACK 1
 #import <TagLib/wavpackfile.h>
+#endif
+#if __has_include(<TagLib/dsffile.h>)
+#define TAGLIB_HAVE_DSF 1
 #import <TagLib/dsffile.h>
+#endif
+#if __has_include(<TagLib/xiphcomment.h>)
+#define TAGLIB_HAVE_XIPH 1
 #import <TagLib/xiphcomment.h>
+#endif
 #import <TagLib/mp4file.h>
 #import <TagLib/mp4tag.h>
 #import <TagLib/mp4item.h>
 #import <TagLib/tbytevectorlist.h>
 #import <TagLib/tstringlist.h>
+#endif
+
+#ifndef TAGLIB_HAVE_FLAC
+#define TAGLIB_HAVE_FLAC 0
+#endif
+#ifndef TAGLIB_HAVE_OGG
+#define TAGLIB_HAVE_OGG 0
+#endif
+#ifndef TAGLIB_HAVE_OPUS
+#define TAGLIB_HAVE_OPUS 0
+#endif
+#ifndef TAGLIB_HAVE_WAVPACK
+#define TAGLIB_HAVE_WAVPACK 0
+#endif
+#ifndef TAGLIB_HAVE_MPC
+#define TAGLIB_HAVE_MPC 0
+#endif
+#ifndef TAGLIB_HAVE_DSF
+#define TAGLIB_HAVE_DSF 0
+#endif
+#ifndef TAGLIB_HAVE_WAV
+#define TAGLIB_HAVE_WAV 0
+#endif
+#ifndef TAGLIB_HAVE_AIFF
+#define TAGLIB_HAVE_AIFF 0
+#endif
+#ifndef TAGLIB_HAVE_XIPH
+#define TAGLIB_HAVE_XIPH 0
 #endif
 
 static NSString *nsStringFromTagString(const TagLib::String &str) {

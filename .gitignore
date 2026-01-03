@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+
+# Env files
+scripts/.env
+.env
+.build
+
+# OS
+.DS_Store
+
+# Fixtures data
+Tests/Fixtures/fixtures.db
+Tests/Fixtures/*.wav
+Tests/Fixtures/*.mp3
+Tests/Fixtures/*.m4a
+Tests/Fixtures/*.mp4
+Tests/Fixtures/*.flac
+Tests/Fixtures/*.ogg
+Tests/Fixtures/*.opus
+Tests/Fixtures/*.aif
+Tests/Fixtures/*.aiff
+Tests/Fixtures/*.wv
+Tests/Fixtures/*.mpc
+Tests/Fixtures/*.dsf

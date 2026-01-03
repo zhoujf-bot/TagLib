@@ -12,6 +12,8 @@
 #import "TagLib.h"
 #import "tstring.h"
 #import "mp4file.h"
+#import "mp4tag.h"
+#import "mp4item.h"
 
 using namespace TagLib;
 
@@ -106,10 +108,11 @@ using namespace TagLib;
 	
 	@synchronized(self)
 	{
-		MP4::ItemListMap &items = _tagFile->tag()->itemListMap();
-		if(items.contains(name))
+		MP4::Tag *tag = _tagFile->tag();
+		TagLib::String key(name);
+		if(tag && tag->contains(key))
 		{
-			items.erase(name);
+			tag->removeItem(key);
 		}
 	}
 }
@@ -120,12 +123,12 @@ using namespace TagLib;
 	
 	@synchronized(self)
 	{
-		MP4::ItemListMap &items = _tagFile->tag()->itemListMap();
-		
-		String nameAsTagLibString(name);
-		if(items.contains(nameAsTagLibString))
+		MP4::Tag *tag = _tagFile->tag();
+		String key(name);
+		if(tag && tag->contains(key))
 		{
-			const String &value = items[nameAsTagLibString].toStringList().toString(", ");
+			const MP4::Item item = tag->item(key);
+			const String &value = item.toStringList().toString(", ");
 			return [NSString stringWithTagLibString:value];
 		}
 	}
@@ -141,8 +144,13 @@ using namespace TagLib;
 	{
 		if(value)
 		{
-			MP4::ItemListMap &items = _tagFile->tag()->itemListMap();
-			items[name] = StringList(NSStringToTagLibString(value));
+			MP4::Tag *tag = _tagFile->tag();
+			if(tag)
+			{
+				StringList list;
+				list.append(NSStringToTagLibString(value));
+				tag->setItem(String(name), MP4::Item(list));
+			}
 		}
 		else
 		{
@@ -290,8 +298,11 @@ using namespace TagLib;
 			ByteVectorList itemList = ByteVectorList();
 			itemList.append(imageBytes);
 			
-			MP4::ItemListMap &items = _tagFile->tag()->itemListMap();
-			items["covr"] = MP4::Item(itemList);
+			MP4::Tag *tag = _tagFile->tag();
+			if(tag)
+			{
+				tag->setItem("covr", MP4::Item(itemList));
+			}
 		}
 		else
 		{
@@ -304,10 +315,11 @@ using namespace TagLib;
 {
 	@synchronized(self)
 	{
-		MP4::ItemListMap &items = _tagFile->tag()->itemListMap();
-		if(items.contains("covr"))
+		MP4::Tag *tag = _tagFile->tag();
+		if(tag && tag->contains("covr"))
 		{
-			ByteVector artworkBytes = items["covr"].toByteVectorList()[0];
+			MP4::Item item = tag->item("covr");
+			ByteVector artworkBytes = item.toByteVectorList()[0];
 			NSData *artworkData = [NSData dataWithBytes:artworkBytes.data() length:artworkBytes.size()];
 			return [[[NSImage alloc] initWithData:artworkData] autorelease];
 		}
@@ -359,50 +371,66 @@ using namespace TagLib;
 
 - (void)setTrackNumber:(NSInteger)trackNumber
 {
-	MP4::ItemListMap &items = _tagFile->tag()->itemListMap();
-	items["trkn"] = MP4::Item(trackNumber, [self trackTotal]);
+	MP4::Tag *tag = _tagFile->tag();
+	if(tag)
+	{
+		tag->setItem("trkn", MP4::Item(trackNumber, [self trackTotal]));
+	}
 }
 
 - (NSInteger)trackNumber
 {
-	MP4::ItemListMap &items = _tagFile->tag()->itemListMap();
-	return items["trkn"].toIntPair().first;
+	MP4::Tag *tag = _tagFile->tag();
+	if(!tag || !tag->contains("trkn")) return 0;
+	return tag->item("trkn").toIntPair().first;
 }
 
 - (void)setTrackTotal:(NSInteger)trackTotal
 {
-	MP4::ItemListMap &items = _tagFile->tag()->itemListMap();
-	items["trkn"] = MP4::Item([self trackNumber], trackTotal);
+	MP4::Tag *tag = _tagFile->tag();
+	if(tag)
+	{
+		tag->setItem("trkn", MP4::Item([self trackNumber], trackTotal));
+	}
 }
 
 - (NSInteger)trackTotal
 {
-	MP4::ItemListMap &items = _tagFile->tag()->itemListMap();
-	return items["trkn"].toIntPair().second;
+	MP4::Tag *tag = _tagFile->tag();
+	if(!tag || !tag->contains("trkn")) return 0;
+	return tag->item("trkn").toIntPair().second;
 }
 
 - (void)setDiscNumber:(NSInteger)discNumber
 {
-	MP4::ItemListMap &items = _tagFile->tag()->itemListMap();
-	items["disk"] = MP4::Item(discNumber, [self discTotal]);
+	MP4::Tag *tag = _tagFile->tag();
+	if(tag)
+	{
+		tag->setItem("disk", MP4::Item(discNumber, [self discTotal]));
+	}
 }
 
 - (NSInteger)discNumber
 {
-	MP4::ItemListMap &items = _tagFile->tag()->itemListMap();
-	return items["disk"].toIntPair().first;
+	MP4::Tag *tag = _tagFile->tag();
+	if(!tag || !tag->contains("disk")) return 0;
+	return tag->item("disk").toIntPair().first;
 }
 
 - (void)setDiscTotal:(NSInteger)discTotal
 {
-	MP4::ItemListMap &items = _tagFile->tag()->itemListMap();
-	items["disk"] = MP4::Item([self discNumber], discTotal);
+	MP4::Tag *tag = _tagFile->tag();
+	if(tag)
+	{
+		tag->setItem("disk", MP4::Item([self discNumber], discTotal));
+	}
 }
 
 - (NSInteger)discTotal
 {
-	MP4::ItemListMap &items = _tagFile->tag()->itemListMap();
-	return items["disk"].toIntPair().second;
+	MP4::Tag *tag = _tagFile->tag();
+	if(!tag || !tag->contains("disk")) return 0;
+	return tag->item("disk").toIntPair().second;
 }
 
 #pragma mark -

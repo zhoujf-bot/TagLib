@@ -12,7 +12,7 @@ final class TagLibReadWriteTests: XCTestCase {
 
     func testApplyLookupWritesFields() throws {
         guard let url = fixtureURL(named: "sample_mp3") else {
-            throw XCTSkip("Missing fixture sample_mp3; fill Tests/Fixtures/samples.json and run fetch script.")
+            throw XCTSkip("Missing fixture sample_mp3; run scripts/fetch-fixtures.sh (edit scripts/fixtures-sources.json if needed).")
         }
         let tmp = try copyToTemp(url: url, suffix: "lookup")
         defer { try? FileManager.default.removeItem(at: tmp) }
@@ -44,7 +44,7 @@ final class TagLibReadWriteTests: XCTestCase {
     // MARK: - Helpers
     private func roundTrip(fixture: String) throws {
         guard let url = fixtureURL(named: fixture) else {
-            throw XCTSkip("Missing fixture \(fixture); fill Tests/Fixtures/samples.json and run fetch script.")
+            throw XCTSkip("Missing fixture \(fixture); run scripts/fetch-fixtures.sh (edit scripts/fixtures-sources.json if needed).")
         }
         let tmp = try copyToTemp(url: url, suffix: "rt")
         defer { try? FileManager.default.removeItem(at: tmp) }
@@ -87,8 +87,17 @@ final class TagLibReadWriteTests: XCTestCase {
             .deletingLastPathComponent() // file
             .deletingLastPathComponent() // TagLibReadWriteTests
             .deletingLastPathComponent() // Tests
-        let candidate = root.appendingPathComponent("Tests/Fixtures/\(name)")
-        return FileManager.default.fileExists(atPath: candidate.path) ? candidate : nil
+        let base = root.appendingPathComponent("Tests/Fixtures")
+        let direct = base.appendingPathComponent(name)
+        if FileManager.default.fileExists(atPath: direct.path) { return direct }
+        let exts = ["mp3", "m4a", "mp4", "flac", "ogg", "opus", "wav", "aif", "aiff", "wv", "mpc", "dsf"]
+        for ext in exts {
+            let candidate = direct.appendingPathExtension(ext)
+            if FileManager.default.fileExists(atPath: candidate.path) {
+                return candidate
+            }
+        }
+        return nil
     }
 
     private func copyToTemp(url: URL, suffix: String) throws -> URL {
