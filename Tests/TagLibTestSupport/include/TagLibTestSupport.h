@@ -12,7 +12,15 @@ extern NSString *const kTLTestGenreKey;
 extern NSString *const kTLTestTrackNumberKey;
 extern NSString *const kTLTestTrackTotalKey;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 NSDictionary<NSString *, id> *TLTestReadTags(NSString *path, NSError **error);
 BOOL TLTestWriteTags(NSString *path, NSDictionary<NSString *, id> *tags, NSError **error);
+
+#ifdef __cplusplus
+}
+#endif
 
 NS_ASSUME_NONNULL_END

@@ -4,69 +4,83 @@
 #ifdef TAGLIB_EXPORT_H
 #undef TAGLIB_EXPORT_H
 #endif
-#import <TagLib/taglib_export.h>
-#import <TagLib/taglib_config.h>
-#import <TagLib/taglib.h>
-#import <TagLib/tag.h>
-#import <TagLib/mpegfile.h>
-#import <TagLib/id3v2tag.h>
-#import <TagLib/id3v2frame.h>
-#import <TagLib/attachedpictureframe.h>
-#import <TagLib/textidentificationframe.h>
+#ifndef TAGLIB_MSVC_SUPPRESS_WARNING_NEEDS_TO_HAVE_DLL_INTERFACE
+#define TAGLIB_MSVC_SUPPRESS_WARNING_NEEDS_TO_HAVE_DLL_INTERFACE
+#endif
+#ifndef TAGLIB_OFFSET_T_FALLBACK
+typedef long long offset_t;
+#define TAGLIB_OFFSET_T_FALLBACK 1
+#endif
+#import <taglib/taglib_export.h>
+#import <taglib/taglib_config.h>
+#import <taglib/taglib.h>
+#ifdef TAGLIB_AUDIOPROPERTIES_H
+#undef TAGLIB_AUDIOPROPERTIES_H
+#endif
+#include <taglib/audioproperties.h>
+#import <taglib/tag.h>
+#import <taglib/tiostream.h>
+#import <taglib/tpropertymap.h>
+#import <taglib/tvariant.h>
+#import <taglib/mpegfile.h>
+#import <taglib/id3v2tag.h>
+#import <taglib/id3v2frame.h>
+#import <taglib/attachedpictureframe.h>
+#import <taglib/textidentificationframe.h>
 #if __has_include(<TagLib/fileref.h>)
 #define TAGLIB_HAVE_FILEREF 1
-#import <TagLib/fileref.h>
+#import <taglib/fileref.h>
 #endif
 #if __has_include(<TagLib/flacfile.h>)
 #define TAGLIB_HAVE_FLAC 1
-#import <TagLib/flacfile.h>
-#import <TagLib/flacpicture.h>
+#import <taglib/flacfile.h>
+#import <taglib/flacpicture.h>
 #endif
 #if __has_include(<TagLib/oggfile.h>)
 #define TAGLIB_HAVE_OGG 1
-#import <TagLib/oggfile.h>
+#import <taglib/oggfile.h>
 #endif
 #if __has_include(<TagLib/oggflacfile.h>)
 #define TAGLIB_HAVE_OGGFLAC 1
-#import <TagLib/oggflacfile.h>
+#import <taglib/oggflacfile.h>
 #endif
 #if __has_include(<TagLib/vorbisfile.h>)
 #define TAGLIB_HAVE_VORBIS 1
-#import <TagLib/vorbisfile.h>
+#import <taglib/vorbisfile.h>
 #endif
 #if __has_include(<TagLib/opusfile.h>)
 #define TAGLIB_HAVE_OPUS 1
-#import <TagLib/opusfile.h>
+#import <taglib/opusfile.h>
 #endif
 #if __has_include(<TagLib/wavfile.h>)
 #define TAGLIB_HAVE_WAV 1
-#import <TagLib/wavfile.h>
+#import <taglib/wavfile.h>
 #endif
 #if __has_include(<TagLib/aifffile.h>)
 #define TAGLIB_HAVE_AIFF 1
-#import <TagLib/aifffile.h>
+#import <taglib/aifffile.h>
 #endif
 #if __has_include(<TagLib/mpcfile.h>)
 #define TAGLIB_HAVE_MPC 1
-#import <TagLib/mpcfile.h>
+#import <taglib/mpcfile.h>
 #endif
 #if __has_include(<TagLib/wavpackfile.h>)
 #define TAGLIB_HAVE_WAVPACK 1
-#import <TagLib/wavpackfile.h>
+#import <taglib/wavpackfile.h>
 #endif
 #if __has_include(<TagLib/dsffile.h>)
 #define TAGLIB_HAVE_DSF 1
-#import <TagLib/dsffile.h>
+#import <taglib/dsffile.h>
 #endif
 #if __has_include(<TagLib/xiphcomment.h>)
 #define TAGLIB_HAVE_XIPH 1
-#import <TagLib/xiphcomment.h>
+#import <taglib/xiphcomment.h>
 #endif
-#import <TagLib/mp4file.h>
-#import <TagLib/mp4tag.h>
-#import <TagLib/mp4item.h>
-#import <TagLib/tbytevectorlist.h>
-#import <TagLib/tstringlist.h>
+#import <taglib/mp4file.h>
+#import <taglib/mp4tag.h>
+#import <taglib/mp4item.h>
+#import <taglib/tbytevectorlist.h>
+#import <taglib/tstringlist.h>
 #endif
 
 #ifndef TAGLIB_HAVE_FLAC
@@ -395,35 +409,42 @@ static TagLib::MP4::Item mp4ItemFromNSString(NSString *value) {
         return @{};
     }
 
-    auto map = tag->itemListMap();
     NSMutableDictionary *dict = [NSMutableDictionary dictionary];
-    dict[@"title"] = nsStringFromTagString(map["\xA9""nam"].toStringList().toString());
-    dict[@"artist"] = nsStringFromTagString(map["\xA9""ART"].toStringList().toString());
-    dict[@"album"] = nsStringFromTagString(map["\xA9""alb"].toStringList().toString());
-    dict[@"albumArtist"] = nsStringFromTagString(map["aART"].toStringList().toString());
-    dict[@"composer"] = nsStringFromTagString(map["\xA9""wrt"].toStringList().toString());
-    dict[@"genre"] = nsStringFromTagString(map["\xA9""gen"].toStringList().toString());
-    dict[@"comment"] = nsStringFromTagString(map["\xA9""cmt"].toStringList().toString());
-    dict[@"year"] = nsStringFromTagString(map["\xA9""day"].toStringList().toString());
+    TagLib::String titleKey("\xA9""nam", TagLib::String::Latin1);
+    TagLib::String artistKey("\xA9""ART", TagLib::String::Latin1);
+    TagLib::String albumKey("\xA9""alb", TagLib::String::Latin1);
+    TagLib::String albumArtistKey("aART", TagLib::String::Latin1);
+    TagLib::String composerKey("\xA9""wrt", TagLib::String::Latin1);
+    TagLib::String genreKey("\xA9""gen", TagLib::String::Latin1);
+    TagLib::String commentKey("\xA9""cmt", TagLib::String::Latin1);
+    TagLib::String yearKey("\xA9""day", TagLib::String::Latin1);
+    TagLib::String trknKey("trkn", TagLib::String::Latin1);
+    TagLib::String diskKey("disk", TagLib::String::Latin1);
+    TagLib::String covrKey("covr", TagLib::String::Latin1);
 
-    auto trknIt = map.find("trkn");
-    if (trknIt != map.end()) {
-        const TagLib::MP4::Item &item = trknIt->second;
-        auto pair = item.toIntPair();
+    if (tag->contains(titleKey)) dict[@"title"] = nsStringFromTagString(tag->item(titleKey).toStringList().toString());
+    if (tag->contains(artistKey)) dict[@"artist"] = nsStringFromTagString(tag->item(artistKey).toStringList().toString());
+    if (tag->contains(albumKey)) dict[@"album"] = nsStringFromTagString(tag->item(albumKey).toStringList().toString());
+    if (tag->contains(albumArtistKey)) dict[@"albumArtist"] = nsStringFromTagString(tag->item(albumArtistKey).toStringList().toString());
+    if (tag->contains(composerKey)) dict[@"composer"] = nsStringFromTagString(tag->item(composerKey).toStringList().toString());
+    if (tag->contains(genreKey)) dict[@"genre"] = nsStringFromTagString(tag->item(genreKey).toStringList().toString());
+    if (tag->contains(commentKey)) dict[@"comment"] = nsStringFromTagString(tag->item(commentKey).toStringList().toString());
+    if (tag->contains(yearKey)) dict[@"year"] = nsStringFromTagString(tag->item(yearKey).toStringList().toString());
+
+    if (tag->contains(trknKey)) {
+        auto pair = tag->item(trknKey).toIntPair();
         dict[@"trackNumber"] = @(pair.first);
         dict[@"trackTotal"] = @(pair.second);
     }
 
-    auto diskIt = map.find("disk");
-    if (diskIt != map.end() && diskIt->second.isValid()) {
-        auto pair = diskIt->second.toIntPair();
+    if (tag->contains(diskKey)) {
+        auto pair = tag->item(diskKey).toIntPair();
         dict[@"discNumber"] = @(pair.first);
         dict[@"discTotal"] = @(pair.second);
     }
 
-    auto covrIt = map.find("covr");
-    if (covrIt != map.end()) {
-        TagLib::ByteVectorList list = covrIt->second.toByteVectorList();
+    if (tag->contains(covrKey)) {
+        TagLib::ByteVectorList list = tag->item(covrKey).toByteVectorList();
         if (!list.isEmpty()) {
             const TagLib::ByteVector &bv = list.front();
             NSData *data = [NSData dataWithBytes:bv.data() length:bv.size()];
@@ -446,8 +467,6 @@ static TagLib::MP4::Item mp4ItemFromNSString(NSString *value) {
         return NO;
     }
 
-    TagLib::MP4::ItemListMap &map = tag->itemListMap();
-
     NSString *title = ([tags[@"title"] isKindOfClass:[NSString class]]) ? tags[@"title"] : nil;
     NSString *artist = ([tags[@"artist"] isKindOfClass:[NSString class]]) ? tags[@"artist"] : nil;
     NSString *album = ([tags[@"album"] isKindOfClass:[NSString class]]) ? tags[@"album"] : nil;
@@ -463,37 +482,37 @@ static TagLib::MP4::Item mp4ItemFromNSString(NSString *value) {
     id coverObj = tags[@"coverImageData"];
     NSData *coverData = ([coverObj isKindOfClass:[NSData class]]) ? (NSData *)coverObj : nil;
 
-    if (title) map["\xA9""nam"] = mp4ItemFromNSString(title);
-    if (artist) map["\xA9""ART"] = mp4ItemFromNSString(artist);
-    if (album) map["\xA9""alb"] = mp4ItemFromNSString(album);
-    if (albumArtist) map["aART"] = mp4ItemFromNSString(albumArtist);
-    if (composer) map["\xA9""wrt"] = mp4ItemFromNSString(composer);
-    if (genre) map["\xA9""gen"] = mp4ItemFromNSString(genre);
-    if (comment) map["\xA9""cmt"] = mp4ItemFromNSString(comment);
-    if (year) map["\xA9""day"] = mp4ItemFromNSString(year);
+    if (title) tag->setItem("\xA9""nam", mp4ItemFromNSString(title));
+    if (artist) tag->setItem("\xA9""ART", mp4ItemFromNSString(artist));
+    if (album) tag->setItem("\xA9""alb", mp4ItemFromNSString(album));
+    if (albumArtist) tag->setItem("aART", mp4ItemFromNSString(albumArtist));
+    if (composer) tag->setItem("\xA9""wrt", mp4ItemFromNSString(composer));
+    if (genre) tag->setItem("\xA9""gen", mp4ItemFromNSString(genre));
+    if (comment) tag->setItem("\xA9""cmt", mp4ItemFromNSString(comment));
+    if (year) tag->setItem("\xA9""day", mp4ItemFromNSString(year));
     if (trackNumber || trackTotal) {
         int num = trackNumber ? trackNumber.intValue : 0;
         int total = trackTotal ? trackTotal.intValue : 0;
-        map["trkn"] = TagLib::MP4::Item(num, total);
+        tag->setItem("trkn", TagLib::MP4::Item(num, total));
     } else {
-        map.erase("trkn");
+        tag->removeItem("trkn");
     }
 
     if (discNumber || discTotal) {
         int num = discNumber ? discNumber.intValue : 0;
         int total = discTotal ? discTotal.intValue : 0;
-        map["disk"] = TagLib::MP4::Item(num, total);
+        tag->setItem("disk", TagLib::MP4::Item(num, total));
     } else {
-        map.erase("disk");
+        tag->removeItem("disk");
     }
 
     if (coverData && coverData.length > 0) {
         TagLib::ByteVector bv((const char *)coverData.bytes, (unsigned int)coverData.length);
         TagLib::ByteVectorList list;
         list.append(bv);
-        map["covr"] = TagLib::MP4::Item(list);
+        tag->setItem("covr", TagLib::MP4::Item(list));
     } else {
-        map.erase("covr");
+        tag->removeItem("covr");
     }
 
     if (!file.save()) {
@@ -580,15 +599,15 @@ static void fillXiphCover(TagLib::Ogg::XiphComment *xiph, NSMutableDictionary *d
 
 static void applyXiphCover(TagLib::Ogg::XiphComment *xiph, NSData *coverData) {
     if (!xiph) return;
-    xiph->removeField("METADATA_BLOCK_PICTURE");
+    xiph->removeFields("METADATA_BLOCK_PICTURE");
     if (!coverData || coverData.length == 0) return;
     TagLib::FLAC::Picture pic;
     pic.setType(TagLib::FLAC::Picture::FrontCover);
     pic.setMimeType("image/jpeg");
     pic.setData(TagLib::ByteVector((const char *)coverData.bytes, (unsigned int)coverData.length));
     TagLib::ByteVector rendered = pic.render();
-    std::string b64 = rendered.toBase64();
-    xiph->addField("METADATA_BLOCK_PICTURE", TagLib::String(b64.c_str(), TagLib::String::UTF8), true);
+    TagLib::ByteVector b64 = rendered.toBase64();
+    xiph->addField("METADATA_BLOCK_PICTURE", TagLib::String(b64.data(), TagLib::String::UTF8), true);
 }
 
 #pragma mark - FLAC

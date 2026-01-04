@@ -73,14 +73,14 @@ private func roundTrip(url: URL) throws {
     let ext = tmp.pathExtension.lowercased()
     let tags = buildTags(forExtension: ext)
 
-    var writeError: NSError?
-    let ok = TagLibBridge.writeTagsAtPath(tmp.path, tags: tags, error: &writeError)
-    if !ok {
-        throw writeError ?? NSError(domain: "TagLibTest", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unknown write error"])
+    do {
+        try TagLibBridge.writeTags(atPath: tmp.path, tags: tags)
+    } catch {
+        throw error
     }
 
     var readError: NSError?
-    let readBack = TagLibBridge.readTagsAtPath(tmp.path, error: &readError)
+    let readBack = TagLibBridge.readTags(atPath: tmp.path, error: &readError)
     if let readError {
         throw readError
     }
@@ -114,7 +114,7 @@ private func buildTags(forExtension ext: String) -> [String: Any] {
     return tags
 }
 
-private func assertTag(_ tags: NSDictionary, key: String, expected: Any?) {
+private func assertTag(_ tags: [AnyHashable: Any], key: String, expected: Any?) {
     guard let expected else { return }
 
     if let expectedString = expected as? String {
@@ -124,7 +124,7 @@ private func assertTag(_ tags: NSDictionary, key: String, expected: Any?) {
     }
 
     if let expectedInt = expected as? Int {
-        let actual = (tags[key] as? NSNumber)?.intValue
+        let actual = (tags[key] as? NSNumber)?.intValue ?? (tags[key] as? Int)
         XCTAssertEqual(actual, expectedInt, "Mismatch for \(key)")
     }
 }

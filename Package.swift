@@ -29,7 +29,10 @@ let package = Package(
             name: "TagLibTestSupport",
             dependencies: ["TagLib"],
             path: "Tests/TagLibTestSupport",
-            publicHeadersPath: "include"
+            publicHeadersPath: "include",
+            linkerSettings: [
+                .linkedLibrary("z")
+            ]
         ),
         .target(
             name: "TagLibBridge",
@@ -39,6 +42,9 @@ let package = Package(
             cxxSettings: [
                 .headerSearchPath("include"),
                 .define("TAGLIB_CPP", to: "1")
+            ],
+            linkerSettings: [
+                .linkedLibrary("z")
             ]
         ),
         .target(

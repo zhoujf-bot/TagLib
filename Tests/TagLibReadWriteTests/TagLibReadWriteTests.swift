@@ -23,7 +23,7 @@ final class TagLibReadWriteTests: XCTestCase {
             kTLTestAlbumKey: "Lookup Album",
             kTLTestAlbumArtistKey: "Lookup Album Artist",
             kTLTestComposerKey: "Lookup Composer",
-            kTLTestYearKey: "2024",
+            kTLTestYearKey: 2024,
             kTLTestGenreKey: "Rock",
             kTLTestTrackNumberKey: 5,
             kTLTestTrackTotalKey: 12
@@ -37,8 +37,8 @@ final class TagLibReadWriteTests: XCTestCase {
         XCTAssertEqual(readBack[kTLTestAlbumArtistKey] as? String, tags[kTLTestAlbumArtistKey] as? String)
         XCTAssertEqual(readBack[kTLTestComposerKey] as? String, tags[kTLTestComposerKey] as? String)
         XCTAssertEqual(readBack[kTLTestGenreKey] as? String, tags[kTLTestGenreKey] as? String)
-        XCTAssertEqual(readBack[kTLTestTrackNumberKey] as? Int, 5)
-        XCTAssertEqual(readBack[kTLTestTrackTotalKey] as? Int, 12)
+        XCTAssertEqual(intValue(readBack[kTLTestTrackNumberKey]), 5)
+        XCTAssertEqual(intValue(readBack[kTLTestTrackTotalKey]), 12)
     }
 
     // MARK: - Helpers
@@ -55,7 +55,7 @@ final class TagLibReadWriteTests: XCTestCase {
         tags[kTLTestArtistKey] = "TestArtist"
         tags[kTLTestAlbumKey] = "TestAlbum"
         tags[kTLTestGenreKey] = "TestGenre"
-        tags[kTLTestYearKey] = "2025"
+        tags[kTLTestYearKey] = 2025
         try write(path: tmp.path, tags: tags)
 
         let reread = try read(path: tmp.path)
@@ -63,23 +63,29 @@ final class TagLibReadWriteTests: XCTestCase {
         XCTAssertEqual(reread[kTLTestArtistKey] as? String, tags[kTLTestArtistKey] as? String)
         XCTAssertEqual(reread[kTLTestAlbumKey] as? String, tags[kTLTestAlbumKey] as? String)
         XCTAssertEqual(reread[kTLTestGenreKey] as? String, tags[kTLTestGenreKey] as? String)
-        XCTAssertEqual(reread[kTLTestYearKey] as? String, tags[kTLTestYearKey] as? String)
+        XCTAssertEqual(intValue(reread[kTLTestYearKey]), intValue(tags[kTLTestYearKey]))
     }
 
     private func read(path: String) throws -> [String: Any] {
         var err: NSError?
-        guard let result = TLTestReadTags(path as NSString, &err) else {
-            throw err ?? NSError(domain: "TagLibTest", code: -1, userInfo: [NSLocalizedDescriptionKey: "Unknown read error"])
+        let result = TLTestReadTags(path, &err)
+        if let err {
+            throw err
         }
-        return result as? [String: Any] ?? [:]
+        return result
     }
 
     private func write(path: String, tags: [String: Any]) throws {
         var err: NSError?
-        let ok = TLTestWriteTags(path as NSString, tags as NSDictionary, &err)
+        let ok = TLTestWriteTags(path, tags, &err)
         if !ok {
             throw err ?? NSError(domain: "TagLibTest", code: -2, userInfo: [NSLocalizedDescriptionKey: "Unknown write error"])
         }
+    }
+
+    private func intValue(_ value: Any?) -> Int? {
+        if let num = value as? NSNumber { return num.intValue }
+        return value as? Int
     }
 
     private func fixtureURL(named name: String) -> URL? {

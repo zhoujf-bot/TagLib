@@ -1,15 +1,15 @@
 #import "TagLibTestSupport.h"
 
-#import <TagLib/taglib.h>
-#import <TagLib/tag.h>
-#import <TagLib/mpegfile.h>
-#import <TagLib/id3v2tag.h>
-#import <TagLib/id3v2frame.h>
-#import <TagLib/textidentificationframe.h>
-#import <TagLib/mp4file.h>
-#import <TagLib/mp4tag.h>
-#import <TagLib/mp4item.h>
-#import <TagLib/tstringlist.h>
+#import <taglib/taglib.h>
+#import <taglib/tag.h>
+#import <taglib/mpegfile.h>
+#import <taglib/id3v2tag.h>
+#import <taglib/id3v2frame.h>
+#import <taglib/textidentificationframe.h>
+#import <taglib/mp4file.h>
+#import <taglib/mp4tag.h>
+#import <taglib/mp4item.h>
+#import <taglib/tstringlist.h>
 
 NSString *const kTLTestTitleKey = @"title";
 NSString *const kTLTestArtistKey = @"artist";
@@ -31,8 +31,35 @@ static TagLib::MP4::Item mp4ItemFromNSString(NSString *value) {
     return TagLib::MP4::Item(list);
 }
 
-NSDictionary<NSString *, id> *TLTestReadTags(NSString *path, NSError **error) {
+static bool isAllDigits(NSString *value) {
+    if (!value || value.length == 0) return false;
+    NSCharacterSet *nonDigits = [[NSCharacterSet decimalDigitCharacterSet] invertedSet];
+    return [value rangeOfCharacterFromSet:nonDigits].location == NSNotFound;
+}
+
+static NSString *resolvedExtension(NSString *path) {
     NSString *ext = path.pathExtension.lowercaseString;
+    if (ext.length > 0) return ext;
+    NSString *name = path.lastPathComponent.lowercaseString;
+    NSArray<NSString *> *parts = [name componentsSeparatedByString:@"_"];
+    NSString *suffix = parts.count > 1 ? parts.lastObject : @"";
+    if (suffix.length > 0) {
+        NSArray<NSString *> *dashParts = [suffix componentsSeparatedByString:@"-"];
+        if (dashParts.count > 0) {
+            suffix = dashParts.firstObject;
+        }
+    }
+    NSSet<NSString *> *supported = [NSSet setWithArray:@[
+        @"mp3", @"m4a", @"mp4", @"aac", @"flac", @"ogg", @"opus", @"wav", @"aif", @"aiff", @"wv", @"mpc", @"dsf", @"m4b", @"m4v"
+    ]];
+    if ([supported containsObject:suffix]) {
+        return suffix;
+    }
+    return ext;
+}
+
+extern "C" NSDictionary<NSString *, id> *TLTestReadTags(NSString *path, NSError **error) {
+    NSString *ext = resolvedExtension(path);
     if ([ext isEqualToString:@"mp3"]) {
         TagLib::MPEG::File file(path.UTF8String, false);
         if (!file.isOpen() || !file.tag()) {
@@ -83,18 +110,32 @@ NSDictionary<NSString *, id> *TLTestReadTags(NSString *path, NSError **error) {
             if (error) *error = [NSError errorWithDomain:@"TagLibTest" code:2 userInfo:@{NSLocalizedDescriptionKey: @"Cannot open MP4"}];
             return @{};
         }
-        auto map = tag->itemListMap();
+        const auto &map = tag->itemMap();
         NSMutableDictionary *dict = [NSMutableDictionary dictionary];
-        dict[kTLTestTitleKey] = nsStringFromTagString(map["\xA9""nam"].toStringList().toString());
-        dict[kTLTestArtistKey] = nsStringFromTagString(map["\xA9""ART"].toStringList().toString());
-        dict[kTLTestAlbumKey] = nsStringFromTagString(map["\xA9""alb"].toStringList().toString());
-        dict[kTLTestAlbumArtistKey] = nsStringFromTagString(map["aART"].toStringList().toString());
-        dict[kTLTestComposerKey] = nsStringFromTagString(map["\xA9""wrt"].toStringList().toString());
-        dict[kTLTestGenreKey] = nsStringFromTagString(map["\xA9""gen"].toStringList().toString());
-        dict[kTLTestYearKey] = nsStringFromTagString(map["\xA9""day"].toStringList().toString());
-        auto trknIt = map.find("trkn");
-        if (trknIt != map.end()) {
-            auto pair = trknIt->second.toIntPair();
+        auto titleKey = TagLib::String("\xA9""nam", TagLib::String::Latin1);
+        auto artistKey = TagLib::String("\xA9""ART", TagLib::String::Latin1);
+        auto albumKey = TagLib::String("\xA9""alb", TagLib::String::Latin1);
+        auto albumArtistKey = TagLib::String("aART", TagLib::String::Latin1);
+        auto composerKey = TagLib::String("\xA9""wrt", TagLib::String::Latin1);
+        auto genreKey = TagLib::String("\xA9""gen", TagLib::String::Latin1);
+        auto yearKey = TagLib::String("\xA9""day", TagLib::String::Latin1);
+        if (tag->contains(titleKey)) dict[kTLTestTitleKey] = nsStringFromTagString(tag->item(titleKey).toStringList().toString());
+        if (tag->contains(artistKey)) dict[kTLTestArtistKey] = nsStringFromTagString(tag->item(artistKey).toStringList().toString());
+        if (tag->contains(albumKey)) dict[kTLTestAlbumKey] = nsStringFromTagString(tag->item(albumKey).toStringList().toString());
+        if (tag->contains(albumArtistKey)) dict[kTLTestAlbumArtistKey] = nsStringFromTagString(tag->item(albumArtistKey).toStringList().toString());
+        if (tag->contains(composerKey)) dict[kTLTestComposerKey] = nsStringFromTagString(tag->item(composerKey).toStringList().toString());
+        if (tag->contains(genreKey)) dict[kTLTestGenreKey] = nsStringFromTagString(tag->item(genreKey).toStringList().toString());
+        if (tag->contains(yearKey)) {
+            NSString *yearString = nsStringFromTagString(tag->item(yearKey).toStringList().toString());
+            if (isAllDigits(yearString)) {
+                dict[kTLTestYearKey] = @([yearString intValue]);
+            } else {
+                dict[kTLTestYearKey] = yearString;
+            }
+        }
+        auto trknKey = TagLib::String("trkn", TagLib::String::Latin1);
+        if (tag->contains(trknKey)) {
+            auto pair = tag->item(trknKey).toIntPair();
             dict[kTLTestTrackNumberKey] = @(pair.first);
             dict[kTLTestTrackTotalKey] = @(pair.second);
         }
@@ -105,8 +146,8 @@ NSDictionary<NSString *, id> *TLTestReadTags(NSString *path, NSError **error) {
     }
 }
 
-BOOL TLTestWriteTags(NSString *path, NSDictionary<NSString *, id> *tags, NSError **error) {
-    NSString *ext = path.pathExtension.lowercaseString;
+extern "C" BOOL TLTestWriteTags(NSString *path, NSDictionary<NSString *, id> *tags, NSError **error) {
+    NSString *ext = resolvedExtension(path);
     if ([ext isEqualToString:@"mp3"]) {
         TagLib::MPEG::File file(path.UTF8String, false);
         if (!file.isOpen() || !file.tag()) {
@@ -178,31 +219,44 @@ BOOL TLTestWriteTags(NSString *path, NSDictionary<NSString *, id> *tags, NSError
             if (error) *error = [NSError errorWithDomain:@"TagLibTest" code:4 userInfo:@{NSLocalizedDescriptionKey: @"Cannot open MP4"}];
             return NO;
         }
-        TagLib::MP4::ItemListMap &map = tag->itemListMap();
+        TagLib::String titleKey("\xA9""nam", TagLib::String::Latin1);
+        TagLib::String artistKey("\xA9""ART", TagLib::String::Latin1);
+        TagLib::String albumKey("\xA9""alb", TagLib::String::Latin1);
+        TagLib::String albumArtistKey("aART", TagLib::String::Latin1);
+        TagLib::String composerKey("\xA9""wrt", TagLib::String::Latin1);
+        TagLib::String genreKey("\xA9""gen", TagLib::String::Latin1);
+        TagLib::String yearKey("\xA9""day", TagLib::String::Latin1);
+        TagLib::String trknKey("trkn", TagLib::String::Latin1);
         NSString *title = tags[kTLTestTitleKey];
         NSString *artist = tags[kTLTestArtistKey];
         NSString *album = tags[kTLTestAlbumKey];
         NSString *albumArtist = tags[kTLTestAlbumArtistKey];
         NSString *composer = tags[kTLTestComposerKey];
         NSString *genre = tags[kTLTestGenreKey];
-        NSString *year = tags[kTLTestYearKey];
+        id yearObj = tags[kTLTestYearKey];
+        NSString *year = nil;
+        if ([yearObj isKindOfClass:[NSString class]]) {
+            year = (NSString *)yearObj;
+        } else if ([yearObj isKindOfClass:[NSNumber class]]) {
+            year = [(NSNumber *)yearObj stringValue];
+        }
         NSNumber *trackNumber = tags[kTLTestTrackNumberKey];
         NSNumber *trackTotal = tags[kTLTestTrackTotalKey];
 
-        if (title) map["\xA9""nam"] = mp4ItemFromNSString(title);
-        if (artist) map["\xA9""ART"] = mp4ItemFromNSString(artist);
-        if (album) map["\xA9""alb"] = mp4ItemFromNSString(album);
-        if (albumArtist) map["aART"] = mp4ItemFromNSString(albumArtist);
-        if (composer) map["\xA9""wrt"] = mp4ItemFromNSString(composer);
-        if (genre) map["\xA9""gen"] = mp4ItemFromNSString(genre);
-        if (year) map["\xA9""day"] = mp4ItemFromNSString(year);
+        if (title) tag->setItem(titleKey, mp4ItemFromNSString(title));
+        if (artist) tag->setItem(artistKey, mp4ItemFromNSString(artist));
+        if (album) tag->setItem(albumKey, mp4ItemFromNSString(album));
+        if (albumArtist) tag->setItem(albumArtistKey, mp4ItemFromNSString(albumArtist));
+        if (composer) tag->setItem(composerKey, mp4ItemFromNSString(composer));
+        if (genre) tag->setItem(genreKey, mp4ItemFromNSString(genre));
+        if (year) tag->setItem(yearKey, mp4ItemFromNSString(year));
 
         if (trackNumber || trackTotal) {
             uint num = trackNumber ? trackNumber.unsignedIntValue : 0;
             uint total = trackTotal ? trackTotal.unsignedIntValue : 0;
-            map["trkn"] = TagLib::MP4::Item(num, total);
+            tag->setItem(trknKey, TagLib::MP4::Item(num, total));
         } else {
-            map.erase("trkn");
+            tag->removeItem(trknKey);
         }
 
         return file.save();
