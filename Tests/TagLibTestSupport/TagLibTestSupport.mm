@@ -38,22 +38,23 @@ static bool isAllDigits(NSString *value) {
 }
 
 static NSString *resolvedExtension(NSString *path) {
-    NSString *ext = path.pathExtension.lowercaseString;
-    if (ext.length > 0) return ext;
-    NSString *name = path.lastPathComponent.lowercaseString;
-    NSArray<NSString *> *parts = [name componentsSeparatedByString:@"_"];
-    NSString *suffix = parts.count > 1 ? parts.lastObject : @"";
-    if (suffix.length > 0) {
-        NSArray<NSString *> *dashParts = [suffix componentsSeparatedByString:@"-"];
-        if (dashParts.count > 0) {
-            suffix = dashParts.firstObject;
-        }
-    }
     NSSet<NSString *> *supported = [NSSet setWithArray:@[
         @"mp3", @"m4a", @"mp4", @"aac", @"flac", @"ogg", @"opus", @"wav", @"aif", @"aiff", @"wv", @"mpc", @"dsf", @"m4b", @"m4v"
     ]];
-    if ([supported containsObject:suffix]) {
-        return suffix;
+    NSString *ext = path.pathExtension.lowercaseString;
+    if (ext.length > 0 && [supported containsObject:ext]) return ext;
+    NSString *name = path.lastPathComponent.lowercaseString;
+    NSString *trimmed = [[name componentsSeparatedByString:@"-"] firstObject];
+    if (trimmed.length > 0) {
+        NSString *trimmedExt = trimmed.pathExtension.lowercaseString;
+        if (trimmedExt.length > 0 && [supported containsObject:trimmedExt]) {
+            return trimmedExt;
+        }
+        NSArray<NSString *> *parts = [trimmed componentsSeparatedByString:@"_"];
+        NSString *suffix = parts.count > 1 ? parts.lastObject : @"";
+        if ([supported containsObject:suffix]) {
+            return suffix;
+        }
     }
     return ext;
 }

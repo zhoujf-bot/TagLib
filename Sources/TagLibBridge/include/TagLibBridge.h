@@ -1,4 +1,7 @@
 #import <Foundation/Foundation.h>
+#ifdef __cplusplus
+#import "taglib.h"
+#endif
 
 NS_ASSUME_NONNULL_BEGIN
 

@@ -3,16 +3,16 @@ import TagLibTestSupport
 
 final class TagLibReadWriteTests: XCTestCase {
     func testMP3ReadWriteRoundTrip() throws {
-        try roundTrip(fixture: "sample_mp3")
+        try roundTrip(exts: ["mp3"])
     }
 
     func testMP4ReadWriteRoundTrip() throws {
-        try roundTrip(fixture: "sample_m4a")
+        try roundTrip(exts: ["m4a", "mp4", "aac", "m4b", "m4v"])
     }
 
     func testApplyLookupWritesFields() throws {
-        guard let url = fixtureURL(named: "sample_mp3") else {
-            throw XCTSkip("Missing fixture sample_mp3; run scripts/fetch-fixtures.sh (edit scripts/fixtures-sources.json if needed).")
+        guard let url = fixtureURL(exts: ["mp3"]) else {
+            throw XCTSkip("Missing MP3 fixtures under ~/Music/test (or TAGLIB_TEST_FIXTURES).")
         }
         let tmp = try copyToTemp(url: url, suffix: "lookup")
         defer { try? FileManager.default.removeItem(at: tmp) }
@@ -42,9 +42,9 @@ final class TagLibReadWriteTests: XCTestCase {
     }
 
     // MARK: - Helpers
-    private func roundTrip(fixture: String) throws {
-        guard let url = fixtureURL(named: fixture) else {
-            throw XCTSkip("Missing fixture \(fixture); run scripts/fetch-fixtures.sh (edit scripts/fixtures-sources.json if needed).")
+    private func roundTrip(exts: [String]) throws {
+        guard let url = fixtureURL(exts: exts) else {
+            throw XCTSkip("Missing fixtures for \(exts.joined(separator: ", ")) under ~/Music/test (or TAGLIB_TEST_FIXTURES).")
         }
         let tmp = try copyToTemp(url: url, suffix: "rt")
         defer { try? FileManager.default.removeItem(at: tmp) }
@@ -88,19 +88,45 @@ final class TagLibReadWriteTests: XCTestCase {
         return value as? Int
     }
 
-    private func fixtureURL(named name: String) -> URL? {
-        let root = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent() // file
-            .deletingLastPathComponent() // TagLibReadWriteTests
-            .deletingLastPathComponent() // Tests
-        let base = root.appendingPathComponent("Tests/Fixtures")
-        let direct = base.appendingPathComponent(name)
-        if FileManager.default.fileExists(atPath: direct.path) { return direct }
-        let exts = ["mp3", "m4a", "mp4", "flac", "ogg", "opus", "wav", "aif", "aiff", "wv", "mpc", "dsf"]
+    private func fixtureURL(exts: [String]) -> URL? {
+        let envPath = ProcessInfo.processInfo.environment["TAGLIB_TEST_FIXTURES"]?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let root: URL
+        if let envPath, !envPath.isEmpty {
+            root = URL(fileURLWithPath: (envPath as NSString).expandingTildeInPath)
+        } else {
+            root = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Music/test")
+        }
+        return firstFixture(in: root, exts: exts)
+    }
+
+    private func firstFixture(in root: URL, exts: [String]) -> URL? {
+        let fm = FileManager.default
         for ext in exts {
-            let candidate = direct.appendingPathExtension(ext)
-            if FileManager.default.fileExists(atPath: candidate.path) {
-                return candidate
+            let dir = root.appendingPathComponent(ext)
+            if let file = firstFile(in: dir, exts: [ext]) {
+                return file
+            }
+        }
+        return firstFile(in: root, exts: exts)
+    }
+
+    private func firstFile(in root: URL, exts: [String]) -> URL? {
+        let keys: [URLResourceKey] = [.isRegularFileKey]
+        guard let enumerator = FileManager.default.enumerator(
+            at: root,
+            includingPropertiesForKeys: keys,
+            options: [.skipsHiddenFiles]
+        ) else {
+            return nil
+        }
+        let set = Set(exts.map { $0.lowercased() })
+        for case let url as URL in enumerator {
+            guard let values = try? url.resourceValues(forKeys: Set(keys)),
+                  values.isRegularFile == true else {
+                continue
+            }
+            if set.contains(url.pathExtension.lowercased()) {
+                return url
             }
         }
         return nil
