@@ -1,7 +1,17 @@
 import XCTest
-import TagLibTestSupport
+import TagLibBridge
 
 final class TagLibReadWriteTests: XCTestCase {
+    private let titleKey = "title"
+    private let artistKey = "artist"
+    private let albumKey = "album"
+    private let albumArtistKey = "albumArtist"
+    private let composerKey = "composer"
+    private let yearKey = "year"
+    private let genreKey = "genre"
+    private let trackNumberKey = "trackNumber"
+    private let trackTotalKey = "trackTotal"
+
     func testMP3ReadWriteRoundTrip() throws {
         try roundTrip(exts: ["mp3"])
     }
@@ -18,27 +28,27 @@ final class TagLibReadWriteTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: tmp) }
 
         let tags: [String: Any] = [
-            kTLTestTitleKey: "Lookup Title",
-            kTLTestArtistKey: "Lookup Artist",
-            kTLTestAlbumKey: "Lookup Album",
-            kTLTestAlbumArtistKey: "Lookup Album Artist",
-            kTLTestComposerKey: "Lookup Composer",
-            kTLTestYearKey: 2024,
-            kTLTestGenreKey: "Rock",
-            kTLTestTrackNumberKey: 5,
-            kTLTestTrackTotalKey: 12
+            titleKey: "Lookup Title",
+            artistKey: "Lookup Artist",
+            albumKey: "Lookup Album",
+            albumArtistKey: "Lookup Album Artist",
+            composerKey: "Lookup Composer",
+            yearKey: 2024,
+            genreKey: "Rock",
+            trackNumberKey: 5,
+            trackTotalKey: 12
         ]
         try write(path: tmp.path, tags: tags)
         let readBack = try read(path: tmp.path)
 
-        XCTAssertEqual(readBack[kTLTestTitleKey] as? String, tags[kTLTestTitleKey] as? String)
-        XCTAssertEqual(readBack[kTLTestArtistKey] as? String, tags[kTLTestArtistKey] as? String)
-        XCTAssertEqual(readBack[kTLTestAlbumKey] as? String, tags[kTLTestAlbumKey] as? String)
-        XCTAssertEqual(readBack[kTLTestAlbumArtistKey] as? String, tags[kTLTestAlbumArtistKey] as? String)
-        XCTAssertEqual(readBack[kTLTestComposerKey] as? String, tags[kTLTestComposerKey] as? String)
-        XCTAssertEqual(readBack[kTLTestGenreKey] as? String, tags[kTLTestGenreKey] as? String)
-        XCTAssertEqual(intValue(readBack[kTLTestTrackNumberKey]), 5)
-        XCTAssertEqual(intValue(readBack[kTLTestTrackTotalKey]), 12)
+        XCTAssertEqual(readBack[titleKey] as? String, tags[titleKey] as? String)
+        XCTAssertEqual(readBack[artistKey] as? String, tags[artistKey] as? String)
+        XCTAssertEqual(readBack[albumKey] as? String, tags[albumKey] as? String)
+        XCTAssertEqual(readBack[albumArtistKey] as? String, tags[albumArtistKey] as? String)
+        XCTAssertEqual(readBack[composerKey] as? String, tags[composerKey] as? String)
+        XCTAssertEqual(readBack[genreKey] as? String, tags[genreKey] as? String)
+        XCTAssertEqual(intValue(readBack[trackNumberKey]), 5)
+        XCTAssertEqual(intValue(readBack[trackTotalKey]), 12)
     }
 
     // MARK: - Helpers
@@ -51,36 +61,30 @@ final class TagLibReadWriteTests: XCTestCase {
 
         var tags = try read(path: tmp.path)
         let newTitle = "TestTitle-\(UUID().uuidString.prefix(6))"
-        tags[kTLTestTitleKey] = newTitle
-        tags[kTLTestArtistKey] = "TestArtist"
-        tags[kTLTestAlbumKey] = "TestAlbum"
-        tags[kTLTestGenreKey] = "TestGenre"
-        tags[kTLTestYearKey] = 2025
+        tags[titleKey] = newTitle
+        tags[artistKey] = "TestArtist"
+        tags[albumKey] = "TestAlbum"
+        tags[genreKey] = "TestGenre"
+        tags[yearKey] = 2025
         try write(path: tmp.path, tags: tags)
 
         let reread = try read(path: tmp.path)
-        XCTAssertEqual(reread[kTLTestTitleKey] as? String, newTitle)
-        XCTAssertEqual(reread[kTLTestArtistKey] as? String, tags[kTLTestArtistKey] as? String)
-        XCTAssertEqual(reread[kTLTestAlbumKey] as? String, tags[kTLTestAlbumKey] as? String)
-        XCTAssertEqual(reread[kTLTestGenreKey] as? String, tags[kTLTestGenreKey] as? String)
-        XCTAssertEqual(intValue(reread[kTLTestYearKey]), intValue(tags[kTLTestYearKey]))
+        XCTAssertEqual(reread[titleKey] as? String, newTitle)
+        XCTAssertEqual(reread[artistKey] as? String, tags[artistKey] as? String)
+        XCTAssertEqual(reread[albumKey] as? String, tags[albumKey] as? String)
+        XCTAssertEqual(reread[genreKey] as? String, tags[genreKey] as? String)
+        XCTAssertEqual(intValue(reread[yearKey]), intValue(tags[yearKey]))
     }
 
     private func read(path: String) throws -> [String: Any] {
         var err: NSError?
-        let result = TLTestReadTags(path, &err)
-        if let err {
-            throw err
-        }
-        return result
+        let result = TagLibBridge.readTags(atPath: path, error: &err)
+        if let err { throw err }
+        return result as? [String: Any] ?? [:]
     }
 
     private func write(path: String, tags: [String: Any]) throws {
-        var err: NSError?
-        let ok = TLTestWriteTags(path, tags, &err)
-        if !ok {
-            throw err ?? NSError(domain: "TagLibTest", code: -2, userInfo: [NSLocalizedDescriptionKey: "Unknown write error"])
-        }
+        try TagLibBridge.writeTags(atPath: path, tags: tags)
     }
 
     private func intValue(_ value: Any?) -> Int? {

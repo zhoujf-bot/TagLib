@@ -26,15 +26,6 @@ let package = Package(
             path: "TagLib.xcframework"
         ),
         .target(
-            name: "TagLibTestSupport",
-            dependencies: ["TagLib"],
-            path: "Tests/TagLibTestSupport",
-            publicHeadersPath: "include",
-            linkerSettings: [
-                .linkedLibrary("z")
-            ]
-        ),
-        .target(
             name: "TagLibBridge",
             dependencies: ["TagLib"],
             path: "Sources/TagLibBridge",
@@ -55,7 +46,7 @@ let package = Package(
         ),
         .testTarget(
             name: "TagLibReadWriteTests",
-            dependencies: ["TagLibTestSupport", "TagLibBridge"],
+            dependencies: ["TagLibBridge"],
             path: "Tests/TagLibReadWriteTests"
         )
     ]

@@ -103,12 +103,6 @@ private func buildTags(forExtension ext: String) -> [String: Any] {
         "trackNumber": 7
     ]
 
-    if ["m4a", "mp4", "aac"].contains(ext) {
-        var tags = baseTags
-        tags["year"] = "2024"
-        return tags
-    }
-
     var tags = baseTags
     tags["year"] = 2024
     return tags
@@ -119,6 +113,10 @@ private func assertTag(_ tags: [AnyHashable: Any], key: String, expected: Any?) 
 
     if let expectedString = expected as? String {
         let actual = tags[key] as? String
+        if actual == nil, let num = tags[key] as? NSNumber, let expectedInt = Int(expectedString) {
+            XCTAssertEqual(num.intValue, expectedInt, "Mismatch for \(key)")
+            return
+        }
         XCTAssertEqual(actual, expectedString, "Mismatch for \(key)")
         return
     }

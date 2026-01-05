@@ -121,11 +121,33 @@ static TagLib::MP4::Item mp4ItemFromNSString(NSString *value) {
     return TagLib::MP4::Item(list);
 }
 
+static NSString *resolvedExtension(NSString *path) {
+    NSSet<NSString *> *supported = [NSSet setWithArray:@[
+        @"mp3", @"m4a", @"mp4", @"aac", @"flac", @"ogg", @"opus", @"wav", @"aif", @"aiff", @"wv", @"mpc", @"dsf", @"m4b", @"m4v"
+    ]];
+    NSString *ext = path.pathExtension.lowercaseString;
+    if (ext.length > 0 && [supported containsObject:ext]) return ext;
+    NSString *name = path.lastPathComponent.lowercaseString;
+    NSString *trimmed = [[name componentsSeparatedByString:@"-"] firstObject];
+    if (trimmed.length > 0) {
+        NSString *trimmedExt = trimmed.pathExtension.lowercaseString;
+        if (trimmedExt.length > 0 && [supported containsObject:trimmedExt]) {
+            return trimmedExt;
+        }
+        NSArray<NSString *> *parts = [trimmed componentsSeparatedByString:@"_"];
+        NSString *suffix = parts.count > 1 ? parts.lastObject : @"";
+        if ([supported containsObject:suffix]) {
+            return suffix;
+        }
+    }
+    return ext;
+}
+
 @implementation TagLibBridge
 
 + (NSDictionary<NSString *, id> *)readTagsAtPath:(NSString *)path error:(NSError **)error {
 #if __has_include(<TagLib/taglib.h>)
-    NSString *ext = path.pathExtension.lowercaseString;
+    NSString *ext = resolvedExtension(path);
     if ([ext isEqualToString:@"mp3"]) {
         return [self readID3Tags:path error:error];
     } else if ([ext isEqualToString:@"m4a"] || [ext isEqualToString:@"aac"] || [ext isEqualToString:@"mp4"]) {
@@ -160,7 +182,7 @@ static TagLib::MP4::Item mp4ItemFromNSString(NSString *value) {
 
 + (BOOL)writeTagsAtPath:(NSString *)path tags:(NSDictionary<NSString *, id> *)tags error:(NSError **)error {
 #if __has_include(<TagLib/taglib.h>)
-    NSString *ext = path.pathExtension.lowercaseString;
+    NSString *ext = resolvedExtension(path);
     BOOL ok = NO;
     if ([ext isEqualToString:@"mp3"]) {
         ok = [self writeID3Tags:path tags:tags error:error];
@@ -429,7 +451,15 @@ static TagLib::MP4::Item mp4ItemFromNSString(NSString *value) {
     if (tag->contains(composerKey)) dict[@"composer"] = nsStringFromTagString(tag->item(composerKey).toStringList().toString());
     if (tag->contains(genreKey)) dict[@"genre"] = nsStringFromTagString(tag->item(genreKey).toStringList().toString());
     if (tag->contains(commentKey)) dict[@"comment"] = nsStringFromTagString(tag->item(commentKey).toStringList().toString());
-    if (tag->contains(yearKey)) dict[@"year"] = nsStringFromTagString(tag->item(yearKey).toStringList().toString());
+    if (tag->contains(yearKey)) {
+        NSString *yearString = nsStringFromTagString(tag->item(yearKey).toStringList().toString());
+        NSCharacterSet *nonDigits = [[NSCharacterSet decimalDigitCharacterSet] invertedSet];
+        if (yearString.length > 0 && [yearString rangeOfCharacterFromSet:nonDigits].location == NSNotFound) {
+            dict[@"year"] = @([yearString intValue]);
+        } else {
+            dict[@"year"] = yearString;
+        }
+    }
 
     if (tag->contains(trknKey)) {
         auto pair = tag->item(trknKey).toIntPair();
@@ -474,7 +504,13 @@ static TagLib::MP4::Item mp4ItemFromNSString(NSString *value) {
     NSString *composer = ([tags[@"composer"] isKindOfClass:[NSString class]]) ? tags[@"composer"] : nil;
     NSString *comment = ([tags[@"comment"] isKindOfClass:[NSString class]]) ? tags[@"comment"] : nil;
     NSString *genre = ([tags[@"genre"] isKindOfClass:[NSString class]]) ? tags[@"genre"] : nil;
-    NSString *year = ([tags[@"year"] isKindOfClass:[NSString class]]) ? tags[@"year"] : nil;
+    id yearObj = tags[@"year"];
+    NSString *year = nil;
+    if ([yearObj isKindOfClass:[NSString class]]) {
+        year = (NSString *)yearObj;
+    } else if ([yearObj isKindOfClass:[NSNumber class]]) {
+        year = [(NSNumber *)yearObj stringValue];
+    }
     NSNumber *trackNumber = ([tags[@"trackNumber"] isKindOfClass:[NSNumber class]]) ? tags[@"trackNumber"] : nil;
     NSNumber *trackTotal = ([tags[@"trackTotal"] isKindOfClass:[NSNumber class]]) ? tags[@"trackTotal"] : nil;
     NSNumber *discNumber = ([tags[@"discNumber"] isKindOfClass:[NSNumber class]]) ? tags[@"discNumber"] : nil;
